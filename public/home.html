@@ -8,18 +8,7 @@
 </head>
 <body>
 	<div class="page-shell">
-		<aside class="sidebar">
-			<div class="brand">
-				<h1>StayFinder</h1>
-				<p>Simple booking portal</p>
-			</div>
-
-			<nav class="side-nav" aria-label="Main navigation">
-				<a class="nav-item active" href="/">Home</a>
-				<a class="nav-item" href="/bookings.html">Bookings</a>
-				<a class="nav-item" href="/confirmation.html">Booking Confirmations</a>
-			</nav>
-		</aside>
+		<div id="navbar-placeholder" data-active="home"></div>
 
 		<main class="main-content">
 			<header class="topbar">
@@ -90,6 +79,7 @@
 			</footer>
 		</main>
 	</div>
+	<script src="/navbar.js"></script>
 
 	<script>
 		const searchForm = document.querySelector('.search-form');
