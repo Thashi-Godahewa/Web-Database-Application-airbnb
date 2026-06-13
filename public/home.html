@@ -149,7 +149,7 @@
 			listingGrid.innerHTML = '<p class="panel-subtitle">Loading random listings...</p>';
 
 			try {
-				const response = await fetch('/listings?limit=6');
+				const response = await fetch('/listings?limit=20');
 				const listings = await response.json();
 				renderListings(listings);
 			} catch (error) {
