@@ -9,6 +9,10 @@ const { MongoClient } = require("mongodb");
 const uri = "mongodb+srv://s4143272:admin2015@dba-cluster.zeijt4l.mongodb.net/?appName=DBA-Cluster";
 const client = new MongoClient(uri);
 
+function escapeRegex(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function getListingsCollection() {
 	await client.connect();
 	const database = client.db('sample_airbnb');
@@ -28,7 +32,8 @@ app.get('/listings', async function(req, res) {
 		const query = {};
 
 		if (req.query.location) {
-			query['address.market'] = req.query.location;
+			const safeLocation = escapeRegex(req.query.location.trim());
+			query['address.market'] = { $regex: `^${safeLocation}$`, $options: 'i' };
 		}
 
 		if (req.query.property_type) {
@@ -36,32 +41,39 @@ app.get('/listings', async function(req, res) {
 		}
 
 		if (req.query.bedrooms) {
-			query.bedrooms = Number(req.query.bedrooms);
+			const parsedBedrooms = Number(req.query.bedrooms);
+			if (!Number.isNaN(parsedBedrooms)) {
+				query.bedrooms = parsedBedrooms;
+			}
 		}
 
-		const pipeline = [];
+		const projection = {
+			_id: 1,
+			name: 1,
+			summary: 1,
+			property_type: 1,
+			bedrooms: 1,
+			address: 1,
+			price: 1,
+			review_scores: 1,
+		};
 
-		if (Object.keys(query).length > 0) {
-			pipeline.push({ $match: query });
+		const listingsCollection = await getListingsCollection();
+		let listings = [];
+
+		if (Object.keys(query).length === 0) {
+			listings = await listingsCollection
+				.aggregate([
+					{ $sample: { size: limit } },
+					{ $project: projection },
+				])
+				.toArray();
+		} else {
+			listings = await listingsCollection
+				.find(query)
+				.project(projection)
+				.toArray();
 		}
-
-		pipeline.push({ $sample: { size: limit } });
-		pipeline.push({
-			$project: {
-				_id: 1,
-				name: 1,
-				summary: 1,
-				property_type: 1,
-				bedrooms: 1,
-				address: 1,
-				price: 1,
-				review_scores: 1,
-			},
-		});
-
-		const listings = await (await getListingsCollection())
-			.aggregate(pipeline)
-			.toArray();
 
 		res.status(200).json(listings);
 	} catch (error) {

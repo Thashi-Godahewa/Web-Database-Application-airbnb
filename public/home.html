@@ -57,7 +57,7 @@
 							<option value="1">1</option>
 							<option value="2">2</option>
 							<option value="3">3</option>
-							<option value="4">4+</option>
+							<option value="4">4</option>
 						</select>
 					</div>
 
@@ -73,6 +73,7 @@
 					<div>
 						<h3>Listings</h3>
 						<p class="panel-subtitle">This area will show random listings first, then filtered results.</p>
+						<p id="listing-count" class="panel-subtitle"></p>
 					</div>
 					<select class="sort-select" aria-label="Sort listings">
 						<option>Sort: Recommended</option>
@@ -91,7 +92,9 @@
 	</div>
 
 	<script>
+		const searchForm = document.querySelector('.search-form');
 		const listingGrid = document.getElementById('listing-grid');
+		const listingCount = document.getElementById('listing-count');
 
 		function formatPrice(price) {
 			if (price && typeof price === 'object' && '$numberDecimal' in price) {
@@ -116,6 +119,9 @@
 		}
 
 		function renderListings(listings) {
+			const count = listings.length;
+			listingCount.textContent = `${count} listing${count === 1 ? '' : 's'} found`;
+
 			if (!listings.length) {
 				listingGrid.innerHTML = '<p class="panel-subtitle">No listings found.</p>';
 				return;
@@ -145,17 +151,50 @@
 			}).join('');
 		}
 
-		async function loadRandomListings() {
-			listingGrid.innerHTML = '<p class="panel-subtitle">Loading random listings...</p>';
+		async function fetchListings(params) {
+			listingGrid.innerHTML = '<p class="panel-subtitle">Loading listings...</p>';
+			listingCount.textContent = 'Searching...';
 
 			try {
-				const response = await fetch('/listings?limit=20');
+				const query = new URLSearchParams(params);
+				const response = await fetch(`/listings?${query.toString()}`);
 				const listings = await response.json();
 				renderListings(listings);
 			} catch (error) {
+				listingCount.textContent = '0 listings found';
 				listingGrid.innerHTML = '<p class="panel-subtitle">Unable to load listings right now.</p>';
 			}
 		}
+
+		async function loadRandomListings() {
+			await fetchListings({ limit: 20 });
+		}
+
+		searchForm.addEventListener('submit', async function(event) {
+			event.preventDefault();
+
+			const location = document.getElementById('location').value.trim();
+			const propertyType = document.getElementById('property_type').value;
+			const bedrooms = document.getElementById('bedrooms').value;
+
+			const params = {
+				location: location,
+			};
+
+			if (propertyType) {
+				params.property_type = propertyType;
+			}
+
+			if (bedrooms) {
+				params.bedrooms = bedrooms;
+			}
+
+			await fetchListings(params);
+		});
+
+		searchForm.addEventListener('reset', function() {
+			window.setTimeout(loadRandomListings, 0);
+		});
 
 		loadRandomListings();
 	</script>
