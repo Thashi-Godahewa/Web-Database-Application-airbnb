@@ -33,7 +33,8 @@ body {
 }
 
 .sidebar {
-  background: linear-gradient(180deg, #ffffff 0%, #dbeafe 24%, #1e3a8a 100%);
+  background: #ffffff;
+  border-right: 1px solid var(--line);
   padding: 24px 14px;
   display: flex;
   flex-direction: column;
