@@ -16,7 +16,7 @@
 
 			<nav class="side-nav" aria-label="Main navigation">
 				<a class="nav-item active" href="/">Home</a>
-				<a class="nav-item" href="/booking.html">Bookings</a>
+				<a class="nav-item" href="/bookings.html">Bookings</a>
 				<a class="nav-item" href="/confirmation.html">Booking Confirmations</a>
 			</nav>
 		</aside>
@@ -115,7 +115,7 @@
 
 		function formatRating(reviewScores) {
 			const rating = reviewScores && reviewScores.review_scores_rating;
-			return rating ? `Rating ${rating}` : 'Rating N/A';
+			return rating ? `Review Score Rating: ${rating}` : 'Review Score Rating: N/A';
 		}
 
 		function renderListings(listings) {
@@ -140,11 +140,11 @@
 							<span class="tag">${propertyType}</span>
 							<span class="score">${formatRating(listing.review_scores)}</span>
 						</div>
-						<h4><a href="/booking.html?listing_id=${listingId}">${title}</a></h4>
+						<h4><a href="/bookings.html?listing_id=${listingId}">${title}</a></h4>
 						<p>${summary}</p>
 						<div class="listing-footer">
 							<strong>${formatPrice(listing.price)} / night</strong>
-							<a class="btn btn-dark" href="/booking.html?listing_id=${listingId}">Book Now</a>
+							<a class="btn btn-dark" href="/bookings.html?listing_id=${listingId}">Book Now</a>
 						</div>
 					</article>
 				`;

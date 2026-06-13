@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>Airbnb Booking | Bookings</title>
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>StayFinder</h1>
+        <p>Simple booking portal</p>
+      </div>
+
+      <nav class="side-nav" aria-label="Main navigation">
+        <a class="nav-item" href="/">Home</a>
+        <a class="nav-item active" href="/bookings.html">Bookings</a>
+        <a class="nav-item" href="/confirmation.html">Booking Confirmations</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <h2>Bookings Page</h2>
+          <p>Fill the form below to complete your booking request.</p>
+        </div>
+      </header>
+
+      <section class="panel">
+        <h3>Selected Property</h3>
+        <p id="listing-info" class="panel-subtitle">Loading listing details...</p>
+      </section>
+
+      <section class="panel">
+        <h3>Lets Book The Property</h3>
+        <p class="panel-subtitle">Fields marked with * are required.</p>
+
+        <form class="search-form" action="/bookings" method="POST">
+          <input type="hidden" id="listing_id" name="listing_id">
+
+          <div class="field-group">
+            <label for="check_in">Check In Date *</label>
+            <input type="date" id="check_in" name="check_in" required>
+          </div>
+
+          <div class="field-group">
+            <label for="check_out">Check Out Date *</label>
+            <input type="date" id="check_out" name="check_out" required>
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="customer_name">Your Name *</label>
+            <input type="text" id="customer_name" name="customer_name" required>
+          </div>
+
+          <div class="field-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+
+          <div class="field-group">
+            <label for="mobile">Your Mobile No *</label>
+            <input type="tel" id="mobile" name="mobile" placeholder="04xxxxxxxx" required>
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="postal_address">Postal Address</label>
+            <input type="text" id="postal_address" name="postal_address">
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="residential_address">Residential Address</label>
+            <input type="text" id="residential_address" name="residential_address" placeholder="(cannot be a postbox address)">
+          </div>
+
+          <div class="form-actions">
+            <a class="btn btn-ghost" href="/">Back to Homepage</a>
+            <button type="submit" class="btn btn-primary">Book Now</button>
+          </div>
+        </form>
+      </section>
+
+      <footer class="footer">
+        <p>ISYS3479 Assignment 4 | Web Database Application - Thashi Maleesa Godahewa (s4143272)</p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const listingId = params.get('listing_id');
+    const listingInfo = document.getElementById('listing-info');
+    const listingIdInput = document.getElementById('listing_id');
+
+    function formatPrice(price) {
+      if (price && typeof price === 'object' && '$numberDecimal' in price) {
+        return Number(price.$numberDecimal).toFixed(2);
+      }
+
+      if (typeof price === 'number') {
+        return price.toFixed(2);
+      }
+
+      if (typeof price === 'string') {
+        const parsed = Number(price);
+        return Number.isNaN(parsed) ? price : parsed.toFixed(2);
+      }
+
+      return 'N/A';
+    }
+
+    async function loadListing() {
+      if (!listingId) {
+        listingInfo.textContent = 'No listing selected. Please choose a property from homepage.';
+        return;
+      }
+
+      listingIdInput.value = listingId;
+
+      try {
+        const response = await fetch(`/listing/${encodeURIComponent(listingId)}`);
+
+        if (!response.ok) {
+          listingInfo.textContent = 'Unable to load selected listing details.';
+          return;
+        }
+
+        const listing = await response.json();
+        const market = listing.address && listing.address.market ? listing.address.market : 'Unknown market';
+
+        listingInfo.textContent = `${listing.name || 'Untitled listing'} | ${listing.property_type || 'Property'} | ${market} | $${formatPrice(listing.price)} / night`;
+      } catch (error) {
+        listingInfo.textContent = 'Unable to load selected listing details.';
+      }
+    }
+
+    loadListing();
+  </script>
+</body>
+</html>

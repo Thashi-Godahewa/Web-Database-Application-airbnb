@@ -19,11 +19,21 @@ async function getListingsCollection() {
 	return database.collection('listingsAndReviews');
 }
 
+async function getBookingsCollection() {
+	await client.connect();
+	const database = client.db('sample_airbnb');
+	return database.collection('bookings');
+}
+
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname,'./public')));
 
 app.get('/', function(req,res){
 res.sendFile(path.join(__dirname,'./public/home.html'));
+});
+
+app.get('/booking.html', function(req, res) {
+	res.redirect(302, '/bookings.html');
 });
 
 app.get('/listings', async function(req, res) {
@@ -79,6 +89,80 @@ app.get('/listings', async function(req, res) {
 	} catch (error) {
 		console.error('Failed to retrieve listings:', error.message);
 		res.status(500).json({ error: 'Failed to retrieve listings.' });
+	}
+});
+
+app.get('/listing/:listingId', async function(req, res) {
+	try {
+		const listingId = req.params.listingId;
+		const listing = await (await getListingsCollection()).findOne(
+			{ _id: listingId },
+			{
+				projection: {
+					_id: 1,
+					name: 1,
+					property_type: 1,
+					bedrooms: 1,
+					price: 1,
+					address: 1,
+				},
+			}
+		);
+
+		if (!listing) {
+			res.status(404).json({ error: 'Listing not found.' });
+			return;
+		}
+
+		res.status(200).json(listing);
+	} catch (error) {
+		console.error('Failed to retrieve listing:', error.message);
+		res.status(500).json({ error: 'Failed to retrieve listing.' });
+	}
+});
+
+app.post('/bookings', async function(req, res) {
+	try {
+		const {
+			listing_id,
+			check_in,
+			check_out,
+			customer_name,
+			email,
+			mobile,
+			postal_address,
+			residential_address,
+		} = req.body;
+
+		if (!listing_id || !check_in || !check_out || !customer_name || !email || !mobile) {
+			res.status(400).json({ error: 'Missing required booking fields.' });
+			return;
+		}
+
+		const arrivalDate = new Date(check_in);
+		const departureDate = new Date(check_out);
+
+		if (Number.isNaN(arrivalDate.getTime()) || Number.isNaN(departureDate.getTime()) || arrivalDate >= departureDate) {
+			res.status(400).json({ error: 'Invalid booking date range.' });
+			return;
+		}
+
+		await (await getBookingsCollection()).insertOne({
+			listingID: listing_id,
+			arrivalDate: arrivalDate,
+			departureDate: departureDate,
+			customerName: customer_name.trim(),
+			email: email.trim(),
+			mobile: mobile.trim(),
+			postalAddress: (postal_address || '').trim(),
+			residentialAddress: (residential_address || '').trim(),
+			createdAt: new Date(),
+		});
+
+		res.redirect(302, '/confirmation.html?status=success');
+	} catch (error) {
+		console.error('Failed to create booking:', error.message);
+		res.redirect(302, '/confirmation.html?status=failed');
 	}
 });
 
