@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg: #f3f4f6;
+  --bg: #eff6ff;
   --surface: #ffffff;
-  --surface-soft: #f9fafb;
-  --text: #111827;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --brand: #0f766e;
-  --brand-soft: #d1fae5;
-  --chip: #f3f4f6;
-  --shadow: 0 10px 30px rgba(17, 24, 39, 0.07);
+  --surface-soft: #f5f9ff;
+  --text: #0f172a;
+  --muted: #475569;
+  --line: #cbd5e1;
+  --brand: #1d4ed8;
+  --brand-soft: #dbeafe;
+  --chip: #eff6ff;
+  --shadow: 0 12px 32px rgba(30, 64, 175, 0.12);
 }
 
 * {
@@ -21,7 +21,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: radial-gradient(circle at top right, #e0f2fe 0%, #f3f4f6 42%, #eef2ff 100%);
+  background: radial-gradient(circle at top right, #bfdbfe 0%, #eff6ff 42%, #dbeafe 100%);
   color: var(--text);
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
 }
@@ -33,8 +33,7 @@ body {
 }
 
 .sidebar {
-  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, #ffffff 0%, #dbeafe 24%, #1e3a8a 100%);
   padding: 24px 14px;
   display: flex;
   flex-direction: column;
@@ -46,11 +45,12 @@ body {
   margin: 0;
   font-size: 1.35rem;
   font-weight: 700;
+  color: #000000;
 }
 
 .brand p {
   margin: 6px 0 0;
-  color: var(--muted);
+  color: #003f87;
   font-size: 0.93rem;
 }
 
@@ -62,7 +62,7 @@ body {
 
 .nav-item {
   text-decoration: none;
-  color: #374151;
+  color: #111827;
   font-weight: 600;
   padding: 11px 12px;
   border-radius: 10px;
@@ -71,12 +71,13 @@ body {
 }
 
 .nav-item:hover {
-  background: #f3f4f6;
-  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #93c5fd;
+  color: #ffffff;
 }
 
 .nav-item.active {
-  background: #111827;
+  background: #0f172a;
   color: #ffffff;
 }
 
@@ -157,7 +158,7 @@ body {
 }
 
 .field-group label {
-  color: #374151;
+  color: #1e3a8a;
   font-size: 0.94rem;
   font-weight: 600;
 }
@@ -166,7 +167,7 @@ body {
 .field-group select,
 .sort-select {
   width: 100%;
-  border: 1px solid #d1d5db;
+  border: 1px solid #bfdbfe;
   border-radius: 10px;
   padding: 10px 12px;
   font: inherit;
@@ -196,18 +197,18 @@ body {
 }
 
 .btn-ghost {
-  background: #ffffff;
+  background: #f8fbff;
   border-color: var(--line);
-  color: #374151;
+  color: #1e3a8a;
 }
 
 .btn-primary {
-  background: var(--brand);
+  background: #991b1b;
   color: #ffffff;
 }
 
 .btn-dark {
-  background: #111827;
+  background: #1e3a8a;
   color: #ffffff;
 }
 
@@ -229,15 +230,15 @@ body {
 }
 
 .listing-card {
-  border: 1px solid #f1d5cf;
-  background: #fff7f5;
+  border: 1px solid #bfdbfe;
+  background: #f8fbff;
   border-radius: 12px;
   padding: 14px;
 }
 
 .listing-card.accent {
-  border-color: #eadcb2;
-  background: #fffbeb;
+  border-color: #93c5fd;
+  background: #eff6ff;
 }
 
 .listing-meta {
@@ -248,8 +249,8 @@ body {
 }
 
 .tag {
-  background: var(--brand-soft);
-  color: #065f46;
+  background: #fee2e2;
+  color: #b91c1c;
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 0.8rem;
@@ -268,7 +269,7 @@ body {
 }
 
 .listing-card h4 a {
-  color: #111827;
+  color: #1e3a8a;
   text-decoration: none;
 }
 
