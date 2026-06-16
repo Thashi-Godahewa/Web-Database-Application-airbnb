@@ -149,6 +149,51 @@ body {
   gap: 14px;
 }
 
+.booking-form {
+  margin-top: 18px;
+}
+
+.booking-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.booking-span-full {
+  grid-column: 1 / -1;
+}
+
+.address-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.address-card {
+  background: linear-gradient(180deg, #fbfdff 0%, #f2f7ff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.address-card-header {
+  margin-bottom: 14px;
+}
+
+.address-card-header h4 {
+  margin: 0;
+  color: #1e3a8a;
+  font-size: 1rem;
+}
+
+.address-card-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .field-group {
   display: grid;
   gap: 8px;
@@ -330,7 +375,16 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .booking-grid,
+  .address-sections {
+    grid-template-columns: 1fr;
+  }
+
   .field-wide {
+    grid-column: auto;
+  }
+
+  .booking-span-full {
     grid-column: auto;
   }
 

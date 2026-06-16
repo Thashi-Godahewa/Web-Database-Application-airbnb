@@ -187,8 +187,16 @@ app.post('/bookings', async function(req, res) {
 			customer_name,
 			email,
 			mobile,
-			postal_address,
-			residential_address,
+			postal_street,
+			postal_city,
+			postal_state,
+			postal_postcode,
+			postal_country,
+			residential_street,
+			residential_city,
+			residential_state,
+			residential_postcode,
+			residential_country,
 		} = req.body;
 
 		if (!listing_id || !check_in || !check_out || !customer_name || !email || !mobile) {
@@ -207,6 +215,20 @@ app.post('/bookings', async function(req, res) {
 		const clientsCollection = await getRegisteredClientsCollection();
 		const normalizedEmail = email.trim().toLowerCase();
 		const normalizedMobile = mobile.trim();
+		const postalAddressObject = {
+			street: (postal_street || '').trim(),
+			city: (postal_city || '').trim(),
+			state: (postal_state || '').trim(),
+			postcode: (postal_postcode || '').trim(),
+			country: (postal_country || '').trim(),
+		};
+		const homeAddressObject = {
+			street: (residential_street || '').trim(),
+			city: (residential_city || '').trim(),
+			state: (residential_state || '').trim(),
+			postcode: (residential_postcode || '').trim(),
+			country: (residential_country || '').trim(),
+		};
 
 		let existingClient = await clientsCollection.findOne({ emailAddress: normalizedEmail });
 		let clientID = '';
@@ -220,8 +242,8 @@ app.post('/bookings', async function(req, res) {
 					$set: {
 						name: customer_name.trim(),
 						mobileNumber: normalizedMobile,
-						postalAddress: (postal_address || '').trim(),
-						homeAddress: (residential_address || '').trim(),
+						postalAddress: postalAddressObject,
+						homeAddress: homeAddressObject,
 					},
 				}
 			);
@@ -236,8 +258,8 @@ app.post('/bookings', async function(req, res) {
 				emailAddress: normalizedEmail,
 				daytimePhoneNumber: '',
 				mobileNumber: normalizedMobile,
-				postalAddress: (postal_address || '').trim(),
-				homeAddress: (residential_address || '').trim(),
+				postalAddress: postalAddressObject,
+				homeAddress: homeAddressObject,
 			});
 		}
 
