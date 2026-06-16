@@ -152,6 +152,49 @@ app.get('/listings', async function(req, res) {
 	}
 });
 
+app.get('/locations', async function(req, res) {
+	try {
+		const rawQuery = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+		const limit = Math.min(Math.max(Number(req.query.limit) || 25, 1), 100);
+		const listingsCollection = await getListingsCollection();
+
+		const baseFilter = {
+			'address.market': {
+				$exists: true,
+				$ne: null,
+				$type: 'string',
+			},
+		};
+
+		if (rawQuery) {
+			const safePrefix = escapeRegex(rawQuery);
+			baseFilter['address.market'] = {
+				...baseFilter['address.market'],
+				$regex: `^${safePrefix}`,
+				$options: 'i',
+			};
+		}
+
+		const locations = await listingsCollection.distinct('address.market', baseFilter);
+		const sorted = locations
+			.filter(function(value) {
+				return typeof value === 'string' && value.trim() !== '';
+			})
+			.map(function(value) {
+				return value.trim();
+			})
+			.sort(function(a, b) {
+				return a.localeCompare(b);
+			})
+			.slice(0, limit);
+
+		res.status(200).json(sorted);
+	} catch (error) {
+		console.error('Failed to retrieve locations:', error.message);
+		res.status(500).json({ error: 'Failed to retrieve locations.' });
+	}
+});
+
 app.get('/listing/:listingId', async function(req, res) {
 	try {
 		const listingId = req.params.listingId;
@@ -347,22 +390,8 @@ app.post('/bookings', async function(req, res) {
 	}
 });
 
-server.listen(3000,function(){
-console.log("Server listening on port: 3000");
-});
-
-//To handle form actions (after submitting the form)
-app.post('/item', function(req,res){
-console.log([req.body.id, req.body.thing]);
-const text =`
-<ol>
-<li>${req.body.id}</li>
-<li>${req.body.thing}</li>
-</ol>
-`;
-res.statusCode = 200;
-res.setHeader('Content-Type', 'text/html');
-res.end(text);
+server.listen(3000, function() {
+	console.log("Server listening on port: 3000");
 });
 
 process.on('SIGINT', async function() {

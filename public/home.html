@@ -28,7 +28,8 @@
 				<form class="search-form" action="/" method="GET">
 					<div class="field-group field-wide">
 						<label for="location">Location *</label>
-						<input type="text" id="location" name="location" placeholder="e.g. Barcelona" required>
+						<input type="text" id="location" name="location" list="location-options" placeholder="e.g. Barcelona" autocomplete="off" required>
+						<datalist id="location-options"></datalist>
 					</div>
 
 					<div class="field-group">
@@ -86,6 +87,8 @@
 
 	<script>
 		const searchForm = document.querySelector('.search-form');
+		const locationInput = document.getElementById('location');
+		const locationOptions = document.getElementById('location-options');
 		const listingGrid = document.getElementById('listing-grid');
 		const listingCount = document.getElementById('listing-count');
 
@@ -163,6 +166,33 @@
 			await fetchListings({ limit: 20 });
 		}
 
+		function renderLocationOptions(locations) {
+			locationOptions.innerHTML = locations.map(function(location) {
+				return `<option value="${location.replace(/"/g, '&quot;')}"></option>`;
+			}).join('');
+		}
+
+		async function fetchLocationOptions(query) {
+			try {
+				const params = new URLSearchParams();
+				params.set('limit', '30');
+
+				if (query) {
+					params.set('q', query);
+				}
+
+				const response = await fetch(`/locations?${params.toString()}`);
+				if (!response.ok) {
+					return;
+				}
+
+				const locations = await response.json();
+				renderLocationOptions(locations);
+			} catch (error) {
+				// Keep search form usable even if suggestions fail.
+			}
+		}
+
 		searchForm.addEventListener('submit', async function(event) {
 			event.preventDefault();
 
@@ -187,8 +217,22 @@
 
 		searchForm.addEventListener('reset', function() {
 			window.setTimeout(loadRandomListings, 0);
+			window.setTimeout(function() {
+				fetchLocationOptions('');
+			}, 0);
 		});
 
+		let locationFetchTimer = null;
+		locationInput.addEventListener('input', function(event) {
+			const nextValue = event.target.value.trim();
+
+			window.clearTimeout(locationFetchTimer);
+			locationFetchTimer = window.setTimeout(function() {
+				fetchLocationOptions(nextValue);
+			}, 120);
+		});
+
+		fetchLocationOptions('');
 		loadRandomListings();
 	</script>
 </body>
