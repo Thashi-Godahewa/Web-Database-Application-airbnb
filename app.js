@@ -84,6 +84,9 @@ async function getNextStringDocumentID(collection) {
 
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname,'./public')));
+app.get('/clay-banks-kiv1ggvkgQk-unsplash.jpg', function(req, res) {
+	res.sendFile(path.join(__dirname, 'clay-banks-kiv1ggvkgQk-unsplash.jpg'));
+});
 
 app.get('/', function(req,res){
 res.sendFile(path.join(__dirname,'./public/home.html'));
