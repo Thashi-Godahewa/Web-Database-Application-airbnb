@@ -23,7 +23,20 @@
 
       <section class="panel">
         <h3 id="status-title">Booking Status</h3>
-        <p class="panel-subtitle">Use the link below to return to the homepage.</p>
+        <p id="status-detail" class="panel-subtitle">Use the link below to return to the homepage.</p>
+
+        <div id="booking-details" class="confirmation-details" hidden>
+          <div class="confirmation-row"><span>Booking ID</span><strong id="detail-booking-id">-</strong></div>
+          <div class="confirmation-row"><span>Customer Name</span><strong id="detail-customer-name">-</strong></div>
+          <div class="confirmation-row"><span>Email</span><strong id="detail-email">-</strong></div>
+          <div class="confirmation-row"><span>Mobile</span><strong id="detail-mobile">-</strong></div>
+          <div class="confirmation-row"><span>Property</span><strong id="detail-property">-</strong></div>
+          <div class="confirmation-row"><span>Property Type</span><strong id="detail-property-type">-</strong></div>
+          <div class="confirmation-row"><span>Location</span><strong id="detail-location">-</strong></div>
+          <div class="confirmation-row"><span>Check In</span><strong id="detail-check-in">-</strong></div>
+          <div class="confirmation-row"><span>Check Out</span><strong id="detail-check-out">-</strong></div>
+          <div class="confirmation-row"><span>Price / Night</span><strong id="detail-price">-</strong></div>
+        </div>
 
         <div class="form-actions" style="margin-top: 18px;">
           <a class="btn btn-dark" href="/">Back to Homepage</a>
@@ -41,15 +54,102 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
+    const bookingId = params.get('booking_id');
+    const reason = params.get('reason');
     const statusTitle = document.getElementById('status-title');
     const statusText = document.getElementById('status-text');
+    const statusDetail = document.getElementById('status-detail');
+    const bookingDetails = document.getElementById('booking-details');
+
+    function formatDate(value) {
+      if (!value) {
+        return 'N/A';
+      }
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return value;
+      }
+
+      return parsed.toLocaleDateString('en-AU', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      });
+    }
+
+    function formatPrice(price) {
+      if (price && typeof price === 'object' && '$numberDecimal' in price) {
+        return `$${Number(price.$numberDecimal).toFixed(2)}`;
+      }
+
+      if (typeof price === 'number') {
+        return `$${price.toFixed(2)}`;
+      }
+
+      if (typeof price === 'string') {
+        const parsed = Number(price);
+        return Number.isNaN(parsed) ? price : `$${parsed.toFixed(2)}`;
+      }
+
+      return 'N/A';
+    }
+
+    function setFailureMessage(failureReason) {
+      if (failureReason === 'missing_fields') {
+        statusText.textContent = 'Booking failed because some required fields were missing.';
+        return;
+      }
+
+      if (failureReason === 'invalid_date_range') {
+        statusText.textContent = 'Booking failed because check-out date must be after check-in date.';
+        return;
+      }
+
+      statusText.textContent = 'Booking could not be completed due to a server error. Please try again.';
+    }
+
+    async function loadBookingDetails() {
+      if (!bookingId) {
+        statusTitle.textContent = 'Booking Failed';
+        statusText.textContent = 'Booking was saved, but booking details are unavailable.';
+        statusDetail.textContent = 'Please return to home page and search again if needed.';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/booking/${encodeURIComponent(bookingId)}`);
+        if (!response.ok) {
+          throw new Error('Request failed');
+        }
+
+        const details = await response.json();
+        bookingDetails.hidden = false;
+        statusDetail.textContent = 'Your booking is confirmed. Here are your booking details:';
+
+        document.getElementById('detail-booking-id').textContent = details.bookingID || 'N/A';
+        document.getElementById('detail-customer-name').textContent = details.customerName || 'N/A';
+        document.getElementById('detail-email').textContent = details.email || 'N/A';
+        document.getElementById('detail-mobile').textContent = details.mobile || 'N/A';
+        document.getElementById('detail-property').textContent = details.listingName || 'N/A';
+        document.getElementById('detail-property-type').textContent = details.propertyType || 'N/A';
+        document.getElementById('detail-location').textContent = details.market || 'N/A';
+        document.getElementById('detail-check-in').textContent = formatDate(details.checkIn);
+        document.getElementById('detail-check-out').textContent = formatDate(details.checkOut);
+        document.getElementById('detail-price').textContent = formatPrice(details.price);
+      } catch (error) {
+        statusDetail.textContent = 'Your booking is confirmed, but we could not load full details right now.';
+      }
+    }
 
     if (status === 'success') {
-      statusTitle.textContent = 'Booking Successful';
+      statusTitle.textContent = 'Booking Confirmed';
       statusText.textContent = 'Your booking has been saved successfully.';
+      loadBookingDetails();
     } else if (status === 'failed') {
       statusTitle.textContent = 'Booking Failed';
-      statusText.textContent = 'Booking could not be completed. Please try again.';
+      setFailureMessage(reason);
+      statusDetail.textContent = 'Please review your booking information and try again.';
     } else {
       statusTitle.textContent = 'No Booking Submitted';
       statusText.textContent = 'Submit a booking form to see confirmation here.';

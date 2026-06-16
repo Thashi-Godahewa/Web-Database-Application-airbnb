@@ -181,6 +181,62 @@ app.get('/listing/:listingId', async function(req, res) {
 	}
 });
 
+app.get('/booking/:bookingID', async function(req, res) {
+	try {
+		const bookingID = Number(req.params.bookingID);
+		if (Number.isNaN(bookingID)) {
+			res.status(400).json({ error: 'Invalid booking ID.' });
+			return;
+		}
+
+		const bookingsCollection = await getBookingsCollection();
+		const booking = await bookingsCollection.findOne(
+			{ bookingID: bookingID },
+			{
+				projection: {
+					bookingID: 1,
+					listingID: 1,
+					clientID: 1,
+					arrivalDate: 1,
+					departureDate: 1,
+				},
+			}
+		);
+
+		if (!booking) {
+			res.status(404).json({ error: 'Booking not found.' });
+			return;
+		}
+
+		const clientsCollection = await getRegisteredClientsCollection();
+		const clientData = await clientsCollection.findOne(
+			{ clientID: booking.clientID },
+			{ projection: { name: 1, emailAddress: 1, mobileNumber: 1 } }
+		);
+
+		const listingData = await (await getListingsCollection()).findOne(
+			{ _id: booking.listingID },
+			{ projection: { name: 1, property_type: 1, address: 1, price: 1 } }
+		);
+
+		res.status(200).json({
+			bookingID: booking.bookingID,
+			checkIn: booking.arrivalDate,
+			checkOut: booking.departureDate,
+			customerName: clientData ? clientData.name : 'N/A',
+			email: clientData ? clientData.emailAddress : 'N/A',
+			mobile: clientData ? clientData.mobileNumber : 'N/A',
+			listingName: listingData && listingData.name ? listingData.name : 'N/A',
+			propertyType: listingData && listingData.property_type ? listingData.property_type : 'N/A',
+			market: listingData && listingData.address && listingData.address.market ? listingData.address.market : 'N/A',
+			price: listingData ? listingData.price : null,
+		});
+	} catch (error) {
+		console.error('Failed to retrieve booking details:', error.message);
+		res.status(500).json({ error: 'Failed to retrieve booking details.' });
+	}
+});
+
 app.post('/bookings', async function(req, res) {
 	try {
 		const {
@@ -203,7 +259,7 @@ app.post('/bookings', async function(req, res) {
 		} = req.body;
 
 		if (!listing_id || !check_in || !check_out || !customer_name || !email || !mobile) {
-			res.status(400).json({ error: 'Missing required booking fields.' });
+			res.redirect(302, '/confirmation.html?status=failed&reason=missing_fields');
 			return;
 		}
 
@@ -211,7 +267,7 @@ app.post('/bookings', async function(req, res) {
 		const departureDate = new Date(check_out);
 
 		if (Number.isNaN(arrivalDate.getTime()) || Number.isNaN(departureDate.getTime()) || arrivalDate >= departureDate) {
-			res.status(400).json({ error: 'Invalid booking date range.' });
+			res.redirect(302, '/confirmation.html?status=failed&reason=invalid_date_range');
 			return;
 		}
 
@@ -284,10 +340,10 @@ app.post('/bookings', async function(req, res) {
 			guests: [],
 		});
 
-		res.redirect(302, '/confirmation.html?status=success');
+		res.redirect(302, `/confirmation.html?status=success&booking_id=${encodeURIComponent(String(bookingID))}`);
 	} catch (error) {
 		console.error('Failed to create booking:', error.message);
-		res.redirect(302, '/confirmation.html?status=failed');
+		res.redirect(302, '/confirmation.html?status=failed&reason=server_error');
 	}
 });
 

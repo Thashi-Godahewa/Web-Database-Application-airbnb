@@ -407,6 +407,39 @@ body::after {
   gap: 12px;
 }
 
+.confirmation-details {
+  margin-top: 14px;
+  border: 1px solid #d9d9ef;
+  border-radius: 12px;
+  background: #f8f7ff;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.confirmation-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  border-bottom: 1px dashed #d7d5ee;
+  padding-bottom: 8px;
+}
+
+.confirmation-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.confirmation-row span {
+  color: #626994;
+}
+
+.confirmation-row strong {
+  color: #30365f;
+  text-align: right;
+}
+
 .footer {
   margin-top: 16px;
   padding: 10px 6px 8px;
@@ -483,5 +516,14 @@ body::after {
   .listing-footer {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .confirmation-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .confirmation-row strong {
+    text-align: left;
   }
 }
