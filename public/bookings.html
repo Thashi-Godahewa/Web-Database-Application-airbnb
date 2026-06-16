@@ -150,6 +150,7 @@
     const listingId = params.get('listing_id');
     const listingInfo = document.getElementById('listing-info');
     const listingIdInput = document.getElementById('listing_id');
+    const bookingForm = document.querySelector('.booking-form');
 
     function formatPrice(price) {
       if (price && typeof price === 'object' && '$numberDecimal' in price) {
@@ -193,6 +194,253 @@
       }
     }
 
+    function ensureErrorElement(input) {
+      const fieldGroup = input.closest('.field-group');
+      if (!fieldGroup) {
+        return null;
+      }
+
+      let errorEl = fieldGroup.querySelector('.field-error');
+      if (!errorEl) {
+        errorEl = document.createElement('p');
+        errorEl.className = 'field-error';
+        fieldGroup.appendChild(errorEl);
+      }
+
+      return errorEl;
+    }
+
+    function setFieldError(input, message) {
+      const errorEl = ensureErrorElement(input);
+      if (!errorEl) {
+        return;
+      }
+
+      if (message) {
+        input.classList.add('input-invalid');
+        errorEl.textContent = message;
+      } else {
+        input.classList.remove('input-invalid');
+        errorEl.textContent = '';
+      }
+    }
+
+    function validateName() {
+      const input = document.getElementById('customer_name');
+      const value = input.value.trim();
+      const lettersOnlyPattern = /^[A-Za-z\s]+$/;
+
+      if (!value) {
+        setFieldError(input, 'Name is required.');
+        return false;
+      }
+
+      if (value.length < 2) {
+        setFieldError(input, 'Name must be at least 2 characters.');
+        return false;
+      }
+
+      if (!lettersOnlyPattern.test(value)) {
+        setFieldError(input, 'Name should contain letters only.');
+        return false;
+      }
+
+      setFieldError(input, '');
+      return true;
+    }
+
+    function validateEmail() {
+      const input = document.getElementById('email');
+      const value = input.value.trim();
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!value) {
+        setFieldError(input, 'Email is required.');
+        return false;
+      }
+
+      if (!emailPattern.test(value)) {
+        setFieldError(input, 'Enter a valid email address.');
+        return false;
+      }
+
+      setFieldError(input, '');
+      return true;
+    }
+
+    function validateMobile() {
+      const input = document.getElementById('mobile');
+      const value = input.value.trim();
+      const mobilePattern = /^\d{10}$/;
+
+      if (!value) {
+        setFieldError(input, 'Mobile number is required.');
+        return false;
+      }
+
+      if (!mobilePattern.test(value)) {
+        setFieldError(input, 'Mobile number must be exactly 10 digits.');
+        return false;
+      }
+
+      setFieldError(input, '');
+      return true;
+    }
+
+    function validateLettersField(fieldId, label) {
+      const input = document.getElementById(fieldId);
+      const value = input.value.trim();
+      const lettersOnlyPattern = /^[A-Za-z\s]+$/;
+
+      if (!value) {
+        setFieldError(input, '');
+        return true;
+      }
+
+      if (!lettersOnlyPattern.test(value)) {
+        setFieldError(input, `${label} should contain letters only.`);
+        return false;
+      }
+
+      setFieldError(input, '');
+      return true;
+    }
+
+    function validatePostcodeField(fieldId) {
+      const input = document.getElementById(fieldId);
+      const value = input.value.trim();
+      const postcodePattern = /^\d{4}$/;
+
+      if (!value) {
+        setFieldError(input, '');
+        return true;
+      }
+
+      if (!postcodePattern.test(value)) {
+        setFieldError(input, 'Postcode must be a 4 digit number.');
+        return false;
+      }
+
+      setFieldError(input, '');
+      return true;
+    }
+
+    function validateCheckIn() {
+      const input = document.getElementById('check_in');
+      if (!input.value) {
+        setFieldError(input, 'Check in date is required.');
+        return false;
+      }
+
+      setFieldError(input, '');
+      return true;
+    }
+
+    function validateCheckOut() {
+      const checkInInput = document.getElementById('check_in');
+      const checkOutInput = document.getElementById('check_out');
+
+      if (!checkOutInput.value) {
+        setFieldError(checkOutInput, 'Check out date is required.');
+        return false;
+      }
+
+      if (checkInInput.value) {
+        const checkInDate = new Date(checkInInput.value);
+        const checkOutDate = new Date(checkOutInput.value);
+
+        if (checkOutDate <= checkInDate) {
+          setFieldError(checkOutInput, 'Check out date must be after check in date.');
+          return false;
+        }
+      }
+
+      setFieldError(checkOutInput, '');
+      return true;
+    }
+
+    function runAllValidations() {
+      const validationResults = [
+        validateCheckIn(),
+        validateCheckOut(),
+        validateName(),
+        validateEmail(),
+        validateMobile(),
+        validateLettersField('postal_city', 'Postal city'),
+        validateLettersField('postal_state', 'Postal state'),
+        validateLettersField('postal_country', 'Postal country'),
+        validatePostcodeField('postal_postcode'),
+        validateLettersField('residential_city', 'Residential city'),
+        validateLettersField('residential_state', 'Residential state'),
+        validateLettersField('residential_country', 'Residential country'),
+        validatePostcodeField('residential_postcode'),
+      ];
+
+      return validationResults.every(Boolean);
+    }
+
+    function attachLiveValidation() {
+      const checkInInput = document.getElementById('check_in');
+      const checkOutInput = document.getElementById('check_out');
+      const nameInput = document.getElementById('customer_name');
+      const emailInput = document.getElementById('email');
+      const mobileInput = document.getElementById('mobile');
+      const lettersOnlyFields = [
+        { id: 'postal_city', label: 'Postal city' },
+        { id: 'postal_state', label: 'Postal state' },
+        { id: 'postal_country', label: 'Postal country' },
+        { id: 'residential_city', label: 'Residential city' },
+        { id: 'residential_state', label: 'Residential state' },
+        { id: 'residential_country', label: 'Residential country' },
+      ];
+      const postcodeFields = ['postal_postcode', 'residential_postcode'];
+
+      checkInInput.addEventListener('input', function() {
+        validateCheckIn();
+        validateCheckOut();
+      });
+
+      checkOutInput.addEventListener('input', validateCheckOut);
+      nameInput.addEventListener('input', validateName);
+      emailInput.addEventListener('input', validateEmail);
+      mobileInput.addEventListener('input', validateMobile);
+      lettersOnlyFields.forEach(function(field) {
+        const input = document.getElementById(field.id);
+        input.addEventListener('input', function() {
+          validateLettersField(field.id, field.label);
+        });
+        input.addEventListener('blur', function() {
+          validateLettersField(field.id, field.label);
+        });
+      });
+      postcodeFields.forEach(function(fieldId) {
+        const input = document.getElementById(fieldId);
+        input.addEventListener('input', function() {
+          validatePostcodeField(fieldId);
+        });
+        input.addEventListener('blur', function() {
+          validatePostcodeField(fieldId);
+        });
+      });
+
+      checkInInput.addEventListener('blur', validateCheckIn);
+      checkOutInput.addEventListener('blur', validateCheckOut);
+      nameInput.addEventListener('blur', validateName);
+      emailInput.addEventListener('blur', validateEmail);
+      mobileInput.addEventListener('blur', validateMobile);
+
+      bookingForm.addEventListener('submit', function(event) {
+        if (!runAllValidations()) {
+          event.preventDefault();
+          const firstInvalid = bookingForm.querySelector('.input-invalid');
+          if (firstInvalid) {
+            firstInvalid.focus();
+          }
+        }
+      });
+    }
+
+    attachLiveValidation();
     loadListing();
   </script>
 </body>

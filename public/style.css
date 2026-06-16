@@ -248,6 +248,14 @@ body::after {
   gap: 8px;
 }
 
+.field-error {
+  margin: -2px 0 0;
+  color: #b42318;
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 1.05rem;
+}
+
 .field-wide {
   grid-column: 1 / -1;
 }
@@ -275,6 +283,12 @@ body::after {
 .sort-select:focus {
   outline: 2px solid rgba(153, 135, 255, 0.42);
   outline-offset: 1px;
+}
+
+.field-group input.input-invalid,
+.field-group select.input-invalid {
+  border-color: #e2575a;
+  background: #fff4f4;
 }
 
 .form-actions {
