@@ -182,6 +182,10 @@ body::after {
   font-size: 1.25rem;
 }
 
+.heading-icon {
+  margin-right: 6px;
+}
+
 .panel-subtitle {
   color: var(--muted);
   margin: 8px 0 0;
