@@ -13,6 +13,101 @@ function escapeRegex(value) {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function parseDateOnly(value) {
+	if (!value) {
+		return null;
+	}
+
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+		const isoDayPattern = /^\d{4}-\d{2}-\d{2}$/;
+
+		if (isoDayPattern.test(trimmed)) {
+			const utcDate = new Date(`${trimmed}T00:00:00.000Z`);
+			return Number.isNaN(utcDate.getTime()) ? null : utcDate;
+		}
+
+		const parsedStringDate = new Date(trimmed);
+		if (Number.isNaN(parsedStringDate.getTime())) {
+			return null;
+		}
+
+		return new Date(Date.UTC(
+			parsedStringDate.getUTCFullYear(),
+			parsedStringDate.getUTCMonth(),
+			parsedStringDate.getUTCDate()
+		));
+	}
+
+	const parsedDate = new Date(value);
+	if (Number.isNaN(parsedDate.getTime())) {
+		return null;
+	}
+
+	return new Date(Date.UTC(
+		parsedDate.getUTCFullYear(),
+		parsedDate.getUTCMonth(),
+		parsedDate.getUTCDate()
+	));
+}
+
+function buildRequestedStayRange(startValue, endValue) {
+	const startDate = parseDateOnly(startValue);
+	const endDate = parseDateOnly(endValue);
+
+	if (!startDate || !endDate) {
+		return null;
+	}
+
+	if (startDate >= endDate) {
+		return null;
+	}
+
+	return { startDate, endDate };
+}
+
+async function getUnavailableListingIds(startDate, endDate) {
+	const bookingsCollection = await getBookingsCollection();
+	const conflictingBookings = await bookingsCollection
+		.find(
+			{
+				$or: [
+					{
+						arrivalDate: { $lt: endDate },
+						departureDate: { $gt: startDate },
+					},
+					{
+						startDate: { $lt: endDate },
+						endDate: { $gt: startDate },
+					},
+				],
+			},
+			{ projection: { listingID: 1, listingId: 1 } }
+		)
+		.toArray();
+
+	const ids = conflictingBookings
+		.map(function(booking) {
+			if (booking.listingID) {
+				return String(booking.listingID);
+			}
+
+			if (booking.listingId) {
+				return String(booking.listingId);
+			}
+
+			return '';
+		})
+		.filter(Boolean);
+
+	return Array.from(new Set(ids));
+}
+
+async function isListingAvailable(listingId, startDate, endDate) {
+	const unavailableListingIds = await getUnavailableListingIds(startDate, endDate);
+	return !unavailableListingIds.includes(String(listingId));
+}
+
 async function getListingsCollection() {
 	await client.connect();
 	const database = client.db('sample_airbnb');
@@ -100,6 +195,12 @@ app.get('/listings', async function(req, res) {
 	try {
 		const limit = Math.min(Number(req.query.limit) || 6, 20);
 		const query = {};
+		const requestedStay = buildRequestedStayRange(req.query.check_in, req.query.check_out);
+
+		if ((req.query.check_in || req.query.check_out) && !requestedStay) {
+			res.status(400).json({ error: 'Invalid date range. Check-out must be after check-in.' });
+			return;
+		}
 
 		if (req.query.location) {
 			const safeLocation = escapeRegex(req.query.location.trim());
@@ -114,6 +215,13 @@ app.get('/listings', async function(req, res) {
 			const parsedBedrooms = Number(req.query.bedrooms);
 			if (!Number.isNaN(parsedBedrooms)) {
 				query.bedrooms = parsedBedrooms;
+			}
+		}
+
+		if (requestedStay) {
+			const unavailableListingIds = await getUnavailableListingIds(requestedStay.startDate, requestedStay.endDate);
+			if (unavailableListingIds.length > 0) {
+				query._id = { $nin: unavailableListingIds };
 			}
 		}
 
@@ -314,6 +422,18 @@ app.post('/bookings', async function(req, res) {
 			return;
 		}
 
+		const requestedStay = buildRequestedStayRange(check_in, check_out);
+		if (!requestedStay) {
+			res.redirect(302, '/confirmation.html?status=failed&reason=invalid_date_range');
+			return;
+		}
+
+		const listingAvailable = await isListingAvailable(listing_id, requestedStay.startDate, requestedStay.endDate);
+		if (!listingAvailable) {
+			res.redirect(302, '/confirmation.html?status=failed&reason=unavailable');
+			return;
+		}
+
 		const clientsCollection = await getRegisteredClientsCollection();
 		const normalizedEmail = email.trim().toLowerCase();
 		const normalizedMobile = mobile.trim();
@@ -374,8 +494,8 @@ app.post('/bookings', async function(req, res) {
 			bookingID: bookingID,
 			listingID: listing_id,
 			clientID: clientID,
-			arrivalDate: arrivalDate,
-			departureDate: departureDate,
+			arrivalDate: requestedStay.startDate,
+			departureDate: requestedStay.endDate,
 			depositPaid: null,
 			balanceDue: null,
 			balanceDueDate: null,
@@ -390,8 +510,8 @@ app.post('/bookings', async function(req, res) {
 	}
 });
 
-server.listen(3000, function() {
-	console.log("Server listening on port: 3000");
+server.listen(3001, function() {
+	console.log("Server listening on port: 3001");
 });
 
 process.on('SIGINT', async function() {

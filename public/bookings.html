@@ -148,6 +148,8 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const listingId = params.get('listing_id');
+    const selectedCheckIn = params.get('check_in');
+    const selectedCheckOut = params.get('check_out');
     const listingInfo = document.getElementById('listing-info');
     const listingIdInput = document.getElementById('listing_id');
     const bookingForm = document.querySelector('.booking-form');
@@ -440,7 +442,21 @@
       });
     }
 
+    function applyPrefilledDates() {
+      const checkInInput = document.getElementById('check_in');
+      const checkOutInput = document.getElementById('check_out');
+
+      if (selectedCheckIn) {
+        checkInInput.value = selectedCheckIn;
+      }
+
+      if (selectedCheckOut) {
+        checkOutInput.value = selectedCheckOut;
+      }
+    }
+
     attachLiveValidation();
+    applyPrefilledDates();
     loadListing();
   </script>
 </body>

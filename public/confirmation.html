@@ -106,6 +106,11 @@
         return;
       }
 
+      if (failureReason === 'unavailable') {
+        statusText.textContent = 'Booking failed because this listing is no longer available for your selected dates.';
+        return;
+      }
+
       statusText.textContent = 'Booking could not be completed due to a server error. Please try again.';
     }
 
@@ -142,15 +147,23 @@
       }
     }
 
+    function removeBookingDetailsSection() {
+      if (bookingDetails && bookingDetails.parentNode) {
+        bookingDetails.parentNode.removeChild(bookingDetails);
+      }
+    }
+
     if (status === 'success') {
       statusTitle.textContent = 'Booking Confirmed';
       statusText.textContent = 'Your booking has been saved successfully.';
       loadBookingDetails();
     } else if (status === 'failed') {
+      removeBookingDetailsSection();
       statusTitle.textContent = 'Booking Failed';
       setFailureMessage(reason);
       statusDetail.textContent = 'Please review your booking information and try again.';
     } else {
+      removeBookingDetailsSection();
       statusTitle.textContent = 'No Booking Submitted';
       statusText.textContent = 'Submit a booking form to see confirmation here.';
     }

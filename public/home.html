@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="style.css">
-	<title>Airbnb Booking | Task 1</title>
+	<title>Airbnb Booking | Task 2</title>
 </head>
 <body>
 	<div class="page-background" aria-hidden="true">
@@ -23,13 +23,23 @@
 
 			<section id="search-panel" class="panel">
 				<h3><span class="heading-icon" aria-hidden="true">🔎</span>Search Listings</h3>
-				<p class="panel-subtitle">Location is required. Property type and bedrooms are optional.</p>
+				<p class="panel-subtitle">Location, check in and check out are required. Property type and bedrooms are optional.</p>
 
 				<form class="search-form" action="/" method="GET">
 					<div class="field-group field-wide">
 						<label for="location">Location *</label>
 						<input type="text" id="location" name="location" list="location-options" placeholder="e.g. Barcelona" autocomplete="off" required>
 						<datalist id="location-options"></datalist>
+					</div>
+
+					<div class="field-group">
+						<label for="check_in">Check In *</label>
+						<input type="date" id="check_in" name="check_in" required>
+					</div>
+
+					<div class="field-group">
+						<label for="check_out">Check Out *</label>
+						<input type="date" id="check_out" name="check_out" required>
 					</div>
 
 					<div class="field-group">
@@ -114,7 +124,7 @@
 			return rating ? `Review Score Rating: ${rating}` : 'Review Score Rating: N/A';
 		}
 
-		function renderListings(listings) {
+		function renderListings(listings, searchDates) {
 			const count = listings.length;
 			listingCount.textContent = `${count} listing${count === 1 ? '' : 's'} found`;
 
@@ -127,8 +137,15 @@
 				const title = listing.name || 'Untitled listing';
 				const summary = listing.summary || 'No summary available.';
 				const propertyType = listing.property_type || 'Property';
-				const listingId = encodeURIComponent(listing._id);
 				const accentClass = index % 2 === 1 ? ' accent' : '';
+				const bookingParams = new URLSearchParams({ listing_id: String(listing._id) });
+
+				if (searchDates && searchDates.check_in && searchDates.check_out) {
+					bookingParams.set('check_in', searchDates.check_in);
+					bookingParams.set('check_out', searchDates.check_out);
+				}
+
+				const bookingUrl = `/bookings.html?${bookingParams.toString()}`;
 
 				return `
 					<article class="listing-card${accentClass}">
@@ -136,26 +153,29 @@
 							<span class="tag">${propertyType}</span>
 							<span class="score">${formatRating(listing.review_scores)}</span>
 						</div>
-						<h4><a href="/bookings.html?listing_id=${listingId}">${title}</a></h4>
+						<h4><a href="${bookingUrl}">${title}</a></h4>
 						<p>${summary}</p>
 						<div class="listing-footer">
 							<strong>${formatPrice(listing.price)} / night</strong>
-							<a class="btn btn-dark" href="/bookings.html?listing_id=${listingId}">Book Now</a>
+							<a class="btn btn-dark" href="${bookingUrl}">Book Now</a>
 						</div>
 					</article>
 				`;
 			}).join('');
 		}
 
-		async function fetchListings(params) {
+		async function fetchListings(params, searchDates) {
 			listingGrid.innerHTML = '<p class="panel-subtitle">Loading listings...</p>';
 			listingCount.textContent = 'Searching...';
 
 			try {
 				const query = new URLSearchParams(params);
 				const response = await fetch(`/listings?${query.toString()}`);
+				if (!response.ok) {
+					throw new Error('Request failed');
+				}
 				const listings = await response.json();
-				renderListings(listings);
+				renderListings(listings, searchDates || null);
 			} catch (error) {
 				listingCount.textContent = '0 listings found';
 				listingGrid.innerHTML = '<p class="panel-subtitle">Unable to load listings right now.</p>';
@@ -163,7 +183,7 @@
 		}
 
 		async function loadRandomListings() {
-			await fetchListings({ limit: 20 });
+			await fetchListings({ limit: 20 }, null);
 		}
 
 		function renderLocationOptions(locations) {
@@ -197,11 +217,27 @@
 			event.preventDefault();
 
 			const location = document.getElementById('location').value.trim();
+			const checkIn = document.getElementById('check_in').value;
+			const checkOut = document.getElementById('check_out').value;
 			const propertyType = document.getElementById('property_type').value;
 			const bedrooms = document.getElementById('bedrooms').value;
 
+			if (!checkIn || !checkOut) {
+				listingCount.textContent = '0 listings found';
+				listingGrid.innerHTML = '<p class="panel-subtitle">Please select check in and check out dates.</p>';
+				return;
+			}
+
+			if (new Date(checkOut) <= new Date(checkIn)) {
+				listingCount.textContent = '0 listings found';
+				listingGrid.innerHTML = '<p class="panel-subtitle">Check out date must be after check in date.</p>';
+				return;
+			}
+
 			const params = {
 				location: location,
+				check_in: checkIn,
+				check_out: checkOut,
 			};
 
 			if (propertyType) {
@@ -212,7 +248,7 @@
 				params.bedrooms = bedrooms;
 			}
 
-			await fetchListings(params);
+			await fetchListings(params, { check_in: checkIn, check_out: checkOut });
 		});
 
 		searchForm.addEventListener('reset', function() {
