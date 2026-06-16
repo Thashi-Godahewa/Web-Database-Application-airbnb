@@ -63,6 +63,25 @@ async function getNextBookingID() {
 	return Number(lastBooking.bookingID) + 1;
 }
 
+async function getNextStringDocumentID(collection) {
+	const docs = await collection
+		.find({ _id: { $type: 'string', $regex: '^\\d+$' } }, { projection: { _id: 1 } })
+		.toArray();
+
+	const maxNumber = docs.reduce(function(max, doc) {
+		const parsed = Number(doc._id);
+		if (Number.isNaN(parsed)) {
+			return max;
+		}
+
+		return Math.max(max, parsed);
+	}, 0);
+
+	const nextNumber = maxNumber + 1;
+	const width = Math.max(3, String(nextNumber).length);
+	return String(nextNumber).padStart(width, '0');
+}
+
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname,'./public')));
 
@@ -208,8 +227,10 @@ app.post('/bookings', async function(req, res) {
 			);
 		} else {
 			clientID = await getNextClientID();
+			const clientDocumentID = await getNextStringDocumentID(clientsCollection);
 
 			await clientsCollection.insertOne({
+				_id: clientDocumentID,
 				clientID: clientID,
 				name: customer_name.trim(),
 				emailAddress: normalizedEmail,
@@ -221,8 +242,11 @@ app.post('/bookings', async function(req, res) {
 		}
 
 		const bookingID = await getNextBookingID();
+		const bookingsCollection = await getBookingsCollection();
+		const bookingDocumentID = await getNextStringDocumentID(bookingsCollection);
 
-		await (await getBookingsCollection()).insertOne({
+		await bookingsCollection.insertOne({
+			_id: bookingDocumentID,
 			bookingID: bookingID,
 			listingID: listing_id,
 			clientID: clientID,
