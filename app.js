@@ -25,6 +25,44 @@ async function getBookingsCollection() {
 	return database.collection('bookings');
 }
 
+async function getRegisteredClientsCollection() {
+	await client.connect();
+	const database = client.db('sample_airbnb');
+	return database.collection('registeredClients');
+}
+
+async function getNextClientID() {
+	const clientsCollection = await getRegisteredClientsCollection();
+	const clients = await clientsCollection
+		.find({ clientID: { $regex: '^C\\d+$' } }, { projection: { clientID: 1 } })
+		.toArray();
+
+	const maxClientNumber = clients.reduce(function(max, clientDoc) {
+		const parsed = Number(String(clientDoc.clientID).slice(1));
+		if (Number.isNaN(parsed)) {
+			return max;
+		}
+
+		return Math.max(max, parsed);
+	}, 0);
+
+	return `C${String(maxClientNumber + 1).padStart(3, '0')}`;
+}
+
+async function getNextBookingID() {
+	const bookingsCollection = await getBookingsCollection();
+	const lastBooking = await bookingsCollection.findOne(
+		{ bookingID: { $type: 'number' } },
+		{ sort: { bookingID: -1 }, projection: { bookingID: 1 } }
+	);
+
+	if (!lastBooking) {
+		return 1;
+	}
+
+	return Number(lastBooking.bookingID) + 1;
+}
+
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname,'./public')));
 
@@ -147,16 +185,54 @@ app.post('/bookings', async function(req, res) {
 			return;
 		}
 
+		const clientsCollection = await getRegisteredClientsCollection();
+		const normalizedEmail = email.trim().toLowerCase();
+		const normalizedMobile = mobile.trim();
+
+		let existingClient = await clientsCollection.findOne({ emailAddress: normalizedEmail });
+		let clientID = '';
+
+		if (existingClient) {
+			clientID = existingClient.clientID;
+
+			await clientsCollection.updateOne(
+				{ _id: existingClient._id },
+				{
+					$set: {
+						name: customer_name.trim(),
+						mobileNumber: normalizedMobile,
+						postalAddress: (postal_address || '').trim(),
+						homeAddress: (residential_address || '').trim(),
+					},
+				}
+			);
+		} else {
+			clientID = await getNextClientID();
+
+			await clientsCollection.insertOne({
+				clientID: clientID,
+				name: customer_name.trim(),
+				emailAddress: normalizedEmail,
+				daytimePhoneNumber: '',
+				mobileNumber: normalizedMobile,
+				postalAddress: (postal_address || '').trim(),
+				homeAddress: (residential_address || '').trim(),
+			});
+		}
+
+		const bookingID = await getNextBookingID();
+
 		await (await getBookingsCollection()).insertOne({
+			bookingID: bookingID,
 			listingID: listing_id,
+			clientID: clientID,
 			arrivalDate: arrivalDate,
 			departureDate: departureDate,
-			customerName: customer_name.trim(),
-			email: email.trim(),
-			mobile: mobile.trim(),
-			postalAddress: (postal_address || '').trim(),
-			residentialAddress: (residential_address || '').trim(),
-			createdAt: new Date(),
+			depositPaid: null,
+			balanceDue: null,
+			balanceDueDate: null,
+			numberOfGuests: null,
+			guests: [],
 		});
 
 		res.redirect(302, '/confirmation.html?status=success');
